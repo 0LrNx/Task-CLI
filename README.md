@@ -1,4 +1,4 @@
-# Task-CLI / Task Manager
+# Task-CLI 
 
 ![Aperçu de l'application](images/app.png)
 
