@@ -6,6 +6,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.Scanner;
@@ -16,6 +17,8 @@ public class Task {
     private final String status;
     private final Date createAt;
     private final Date updateAt;
+
+    
 
     public Task(int Id, String description, String status, Date createAt, Date updateAt){
         this.Id = Id;
@@ -35,6 +38,24 @@ public class Task {
         return json;
     }
 
+    private static Path getTasksFilePath() {
+        return Paths.get(System.getProperty("user.dir"), "tasks.json");
+    }
+
+    private static JSONArray readTasksArray(Path filePath) throws IOException {
+        File file = filePath.toFile();
+        if (!file.exists()) {
+            return new JSONArray();
+        }
+
+        String content = Files.readString(filePath);
+        if (content.isBlank()) {
+            return new JSONArray();
+        }
+
+        return new JSONArray(content);
+    }
+
     static void addTask(Scanner scanner) {
         System.out.println("Entrez la description de la tâche :");
         scanner.nextLine();
@@ -44,20 +65,12 @@ public class Task {
         Task newTask = new Task(generateId(), description, status, new Date(), new Date());
 
         try {
-            String filePath = "tasks.json";
-            File file = new File(filePath);
-
-            JSONArray tasksArray;
-            if (file.exists()) {
-                String content = new String(Files.readAllBytes(Paths.get(filePath)));
-                tasksArray = new JSONArray(content);
-            } else {
-                tasksArray = new JSONArray();
-            }
+            Path filePath = getTasksFilePath();
+            JSONArray tasksArray = readTasksArray(filePath);
 
             tasksArray.put(newTask.toJSON());
 
-            Files.write(Paths.get(filePath), tasksArray.toString(2).getBytes());
+            Files.writeString(filePath, tasksArray.toString(2));
             System.out.println("Tâche ajoutée avec succès !");
         } catch (IOException e) {
             System.out.println("Une erreur est survenue lors de l'ajout de la tâche : " + e.getMessage());
@@ -66,8 +79,8 @@ public class Task {
 
 
     static void modifyTask(Scanner scanner) {
-        String filePath = "tasks.json";
-        File file = new File(filePath);
+        Path filePath = getTasksFilePath();
+        File file = filePath.toFile();
 
         if (!file.exists()) {
             System.out.println("Aucune tâche trouvée à modifier.");
@@ -75,8 +88,7 @@ public class Task {
         }
 
         try {
-            String content = new String(Files.readAllBytes(Paths.get(filePath)));
-            JSONArray tasksArray = new JSONArray(content);
+            JSONArray tasksArray = readTasksArray(filePath);
 
             System.out.print("Entrez l'ID de la tâche à modifier : ");
             int taskId = scanner.nextInt();
@@ -106,7 +118,7 @@ public class Task {
             taskToModify.put("status", newStatus.isEmpty() ? taskToModify.getString("status") : newStatus);
             taskToModify.put("updateAt", new Date().getTime());
 
-            Files.write(Paths.get(filePath), tasksArray.toString(2).getBytes());
+            Files.writeString(filePath, tasksArray.toString(2));
 
             System.out.println("Tâche modifiée avec succès !");
         } catch (IOException e) {
@@ -115,8 +127,8 @@ public class Task {
     }
 
     static void deleteTask(Scanner scanner) {
-        String filePath = "tasks.json";
-        File file = new File(filePath);
+        Path filePath = getTasksFilePath();
+        File file = filePath.toFile();
 
         if (!file.exists()) {
             System.out.println("Aucune tâche trouvée à supprimer.");
@@ -124,8 +136,7 @@ public class Task {
         }
 
         try {
-            String content = new String(Files.readAllBytes(Paths.get(filePath)));
-            JSONArray tasksArray = new JSONArray(content);
+            JSONArray tasksArray = readTasksArray(filePath);
 
             System.out.print("Entrez l'ID de la tâche à supprimer : ");
             int taskId = scanner.nextInt();
@@ -146,7 +157,7 @@ public class Task {
             }
 
             tasksArray.remove(taskIndex);
-            Files.write(Paths.get(filePath), tasksArray.toString(2).getBytes());
+            Files.writeString(filePath, tasksArray.toString(2));
 
             System.out.println("Tâche supprimée avec succès !");
         } catch (IOException e) {
@@ -155,8 +166,8 @@ public class Task {
     }
 
     static void viewTasks(Scanner scanner) {
-        String filePath = "tasks.json";
-        File file = new File(filePath);
+        Path filePath = getTasksFilePath();
+        File file = filePath.toFile();
 
         if (!file.exists()) {
             System.out.println("Aucune tâche trouvée.");
@@ -164,8 +175,7 @@ public class Task {
         }
 
         try {
-            String content = new String(Files.readAllBytes(Paths.get(filePath)));
-            JSONArray tasksArray = new JSONArray(content);
+            JSONArray tasksArray = readTasksArray(filePath);
 
             if (tasksArray.isEmpty()) {
                 System.out.println("Aucune tâche à afficher.");
@@ -214,12 +224,11 @@ public class Task {
 
 
     private static int generateId() {
-        String filePath = "tasks.json";
-        File file = new File(filePath);
+        Path filePath = getTasksFilePath();
+        File file = filePath.toFile();
         if (file.exists()) {
             try {
-                String content = new String(Files.readAllBytes(Paths.get(filePath)));
-                JSONArray tasksArray = new JSONArray(content);
+                JSONArray tasksArray = readTasksArray(filePath);
                 if (!tasksArray.isEmpty()) {
                     JSONObject lastTask = tasksArray.getJSONObject(tasksArray.length() - 1);
                     return lastTask.getInt("Id") + 1;
